@@ -47,3 +47,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	corsHandler.ServeHTTP(w,r)
 }
 
+func main() {
+	// Define the endpoint and the handler
+	http.HandleFunc("/", handler)
+
+	// Start the server
+	log.Println("Server is starting on port 8080...")
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal("Error starting server:", err)
+	}
+}
