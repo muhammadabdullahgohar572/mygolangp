@@ -22,7 +22,7 @@ type User struct {
 	Password    string `json:"password"`
 	Email       string `json:"email"`
 	Gender      string `json:"gender"`
-	CompanyName string `json:"company_name"`
+	CompanyName string `json:"companyname"`
 }
 
 // init function to set up MongoDB connection
