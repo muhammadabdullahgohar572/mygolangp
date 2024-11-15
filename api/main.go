@@ -21,14 +21,13 @@ func init() {
 	initMongo()
 }
 
-// Function to initialize MongoDB connection
 func initMongo() {
 	var err error
 	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatal("Error connecting to MongoDB:", err)
 	}
-	usersCollection = client.Database("test").Collection("userdata")
+	usersCollection = client.Database("test").Collection("users")
 }
 
 // Handler function to handle incoming requests
