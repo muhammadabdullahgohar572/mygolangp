@@ -73,8 +73,8 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "User created successfully",
 		"data": map[string]interface{}{
-			"email": user.Email,
 			"Username":  user.Username,
+			"email": user.Email,
 			"Password":  user.Password,
 			"CompanyName":   user.CompanyName,
 			"Gender":   user.Gender,
