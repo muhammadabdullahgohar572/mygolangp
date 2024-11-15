@@ -31,7 +31,7 @@ func initMongo() {
 }
 
 // Handler function to handle incoming requests
-func handler(w http.ResponseWriter, r *http.Request) {
+func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Route to handle a simple GET request
