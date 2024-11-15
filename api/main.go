@@ -70,7 +70,7 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
-	return
+	
 }
 
 // Handler function to handle incoming requests
