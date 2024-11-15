@@ -69,7 +69,18 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(&user)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "User created successfully",
+		"data": map[string]interface{}{
+			"email": user.Email,
+			"Username":  user.Username,
+			"Password":  user.Password,
+			"CompanyName":   user.CompanyName,
+			"Gender":   user.Gender,
+
+		},
+	})
 	
 }
 
