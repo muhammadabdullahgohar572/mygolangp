@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var mongodburl = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var client *mongo.Client
-var usercollection *mongo.Collection
+var usersCollection *mongo.Collection
 
 // init function to set up MongoDB connection
 func init() {
@@ -23,11 +24,11 @@ func init() {
 // Function to initialize MongoDB connection
 func initMongo() {
 	var err error
-	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongodburl))
+	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatal("Error connecting to MongoDB:", err)
 	}
-	usercollection = client.Database("test").Collection("userdata")
+	usersCollection = client.Database("test").Collection("userdata")
 }
 
 // Handler function to handle incoming requests
