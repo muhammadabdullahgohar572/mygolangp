@@ -98,7 +98,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "hello world",
+			"message": "hello worldd",
 		})
 	}).Methods("GET")
 	router.HandleFunc("/signup", sigup).Methods("POST")
