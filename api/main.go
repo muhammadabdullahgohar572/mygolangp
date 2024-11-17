@@ -82,7 +82,7 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request) {
     router :=mux.NewRouter()
 
      router.HandleFunc("/",func(w http.ResponseWriter, r *http.Request) {
