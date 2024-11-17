@@ -1,10 +1,11 @@
-package handler
+package main
 
 import (
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,7 @@ var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?re
 var client *mongo.Client
 var usersCollection *mongo.Collection
 
-// User struct with proper JSON tags
+// User struct with JSON tags
 type User struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
@@ -28,10 +29,10 @@ type User struct {
 
 // Initialize MongoDB connection
 func init() {
-	bdconnect()
+	connectToDB()
 }
 
-func bdconnect() {
+func connectToDB() {
 	var err error
 	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
 	if err != nil {
@@ -83,7 +84,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Exported handler function for Vercel
+// Exported function required by Vercel
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
