@@ -45,7 +45,7 @@ func connectToDB() {
 func Signup(w http.ResponseWriter, r *http.Request) {
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request yyy", http.StatusBadRequest)
 		return
 	}
 
