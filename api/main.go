@@ -1,4 +1,4 @@
-package handler
+package main
 
 import (
 	"context"
@@ -14,11 +14,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// MongoDB connection URI
 var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var client *mongo.Client
 var usersCollection *mongo.Collection
 
-// User struct with JSON tags
+// User struct defines the expected JSON payload for signup
 type User struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
@@ -41,17 +42,27 @@ func connectToDB() {
 	usersCollection = client.Database("test").Collection("userdata")
 }
 
-// Signup handler
+// Signup handler for user registration
 func Signup(w http.ResponseWriter, r *http.Request) {
 	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request yyy", http.StatusBadRequest)
+
+	// Decode JSON payload
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if user.Username == "" || user.Password == "" || user.Email == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
 	// Check if email already exists
 	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	err = usersCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
 		http.Error(w, "Email already exists", http.StatusConflict)
 		return
@@ -72,6 +83,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Respond with success message
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "User created successfully",
@@ -84,8 +96,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Exported function required by Vercel
-func handler(w http.ResponseWriter, r *http.Request) {
+// Exported Handler function for Vercel
+func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Define routes
