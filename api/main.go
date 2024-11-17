@@ -12,9 +12,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var mongodburl = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var client *mongo.Client
 var usersCollection *mongo.Collection
+
 type User struct {
 	username    string `json:"username"`
 	password    string `json:"password"`
