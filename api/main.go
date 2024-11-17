@@ -85,7 +85,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Exported function required by Vercel
-func Handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Define routes
