@@ -91,7 +91,7 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handler function to handle incoming requests
-func Handler(w http.ResponseWriter, r *http.Request) {
+func hhandler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Route to handle a simple GET request
