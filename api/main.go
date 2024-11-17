@@ -1,11 +1,10 @@
-package main
+package handler
 
 import (
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
-
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,7 +24,7 @@ type User struct {
 	CompanyName string `json:"companyname"`
 }
 
-// Initialize MongoDB connection
+// init function to set up MongoDB connection
 func init() {
 	initMongo()
 }
@@ -39,8 +38,10 @@ func initMongo() {
 	usersCollection = client.Database("test").Collection("users")
 }
 
-func signup(w http.ResponseWriter, r *http.Request) {
+func sigup(w http.ResponseWriter, r *http.Request) {
+
 	var user User
+
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -53,14 +54,21 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+
+
+	hasshedpassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+
 	if err != nil {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
 
-	user.Password = string(hashedPassword)
+
+
+	
+	user.Password = string(hasshedpassword)
 	_, err = usersCollection.InsertOne(context.TODO(), user)
+
 	if err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
@@ -71,16 +79,19 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "User created successfully",
 		"data": map[string]interface{}{
-			"Username":    user.Username,
-			"email":       user.Email,
-			"Password":    user.Password,
-			"CompanyName": user.CompanyName,
-			"Gender":      user.Gender,
+			"Username":  user.Username,
+			"email": user.Email,
+			"Password":  user.Password,
+			"CompanyName":   user.CompanyName,
+			"Gender":   user.Gender,
+
 		},
 	})
+	
 }
 
-func handler() http.Handler {
+// Handler function to handle incoming requests
+func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Route to handle a simple GET request
@@ -90,9 +101,7 @@ func handler() http.Handler {
 			"message": "hello world",
 		})
 	}).Methods("GET")
-
-	router.HandleFunc("/signup", signup).Methods("POST")
-
+	router.HandleFunc("/signup", sigup).Methods("POST")
 	// CORS handler setup
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -100,12 +109,6 @@ func handler() http.Handler {
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}).Handler(router)
 
-	return corsHandler
-}
-
-func main() {
-	log.Println("Server is running on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", handler()); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
-	}
+	// Serve HTTP with CORS enabled
+	corsHandler.ServeHTTP(w, r)
 }
