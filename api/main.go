@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +25,7 @@ type User struct {
 	CompanyName string `json:"companyname"`
 }
 
-// init function to set up MongoDB connection
+// Initialize MongoDB connection
 func init() {
 	initMongo()
 }
@@ -38,10 +39,8 @@ func initMongo() {
 	usersCollection = client.Database("test").Collection("users")
 }
 
-func sigup(w http.ResponseWriter, r *http.Request) {
-
+func signup(w http.ResponseWriter, r *http.Request) {
 	var user User
-
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -54,21 +53,14 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-
-	hasshedpassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
 
-
-
-	
-	user.Password = string(hasshedpassword)
+	user.Password = string(hashedPassword)
 	_, err = usersCollection.InsertOne(context.TODO(), user)
-
 	if err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
@@ -79,19 +71,16 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "User created successfully",
 		"data": map[string]interface{}{
-			"Username":  user.Username,
-			"email": user.Email,
-			"Password":  user.Password,
-			"CompanyName":   user.CompanyName,
-			"Gender":   user.Gender,
-
+			"Username":    user.Username,
+			"email":       user.Email,
+			"Password":    user.Password,
+			"CompanyName": user.CompanyName,
+			"Gender":      user.Gender,
 		},
 	})
-	
 }
 
-// Handler function to handle incoming requests
-func handler(w http.ResponseWriter, r *http.Request) {
+func handler() http.Handler {
 	router := mux.NewRouter()
 
 	// Route to handle a simple GET request
@@ -101,7 +90,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			"message": "hello world",
 		})
 	}).Methods("GET")
-	router.HandleFunc("/signup", sigup).Methods("POST")
+
+	router.HandleFunc("/signup", signup).Methods("POST")
+
 	// CORS handler setup
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -109,6 +100,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}).Handler(router)
 
-	// Serve HTTP with CORS enabled
-	corsHandler.ServeHTTP(w, r)
+	return corsHandler
+}
+
+func main() {
+	log.Println("Server is running on http://localhost:8080")
+	if err := http.ListenAndServe(":8080", handler()); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }
