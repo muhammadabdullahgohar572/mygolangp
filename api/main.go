@@ -1,4 +1,4 @@
-package handler
+package main
 
 import (
 	"context"
@@ -12,97 +12,92 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+var mongodburl = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var client *mongo.Client
 var usersCollection *mongo.Collection
-
 type User struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	Gender      string `json:"gender"`
-	CompanyName string `json:"companyname"`
+	username    string `json:"username"`
+	password    string `json:"password"`
+	email       string `json:"email"`
+	CompanyName string `json:"CompanyName"`
+	Age         string `json:"Age"`
 }
-
-// init function to set up MongoDB connection
 func init() {
-	initMongo()
+	bdconnect()
 }
 
-func initMongo() {
+func bdconnect() {
 	var err error
-	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongodburl))
 	if err != nil {
-		log.Fatal("Error connecting to MongoDB:", err)
+		log.Fatal("Data base connection error bdconnect")
 	}
-	usersCollection = client.Database("test").Collection("users")
+
+	usersCollection = client.Database("test").Collection("userdata")
 }
 
 func sigup(w http.ResponseWriter, r *http.Request) {
+    var user User
+    if  err :=json.NewDecoder(r.Body).Decode(&user);err != nil {
+        http.Error(w,"Invalid request body",http.StatusBadRequest)
+        return
+    }
+    var existingUser User
+    err :=usersCollection.FindOne(context.TODO(),map[string]string{"email":user.email}).Decode(&existingUser)
+    
+    if err == nil {
+        http.Error(w,"Email already exists",http.StatusConflict)
+        return
+    }
+    hasshedpassword,err :=bcrypt.GenerateFromPassword([]byte(user.password),bcrypt.DefaultCost);
+   
+   
+     if err!= nil {
+        http.Error(w,"Error hashing password",http.StatusInternalServerError)
+        return
+    }
+     
+    user.password = string(hasshedpassword)
 
-	var user User
+    _,err =usersCollection.InsertOne(context.TODO(),user)
+      if err!= nil {
+        http.Error(w,"Error inserting user",http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusCreated)
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "User created successfully",
+        "status":"status created",
+        "data":map[string]interface{}{
+            "username": user.username,
+            "email": user.email,
+            "CompanyName": user.CompanyName,
+            "Age": user.Age,
+            "status":"status created",
+        },
 
-	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": user.Email}).Decode(&existingUser)
-	if err == nil {
-		http.Error(w, "Email already exists", http.StatusConflict)
-		return
-	}
-	hasshedpassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+    })
 
-	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
-	}
-	user.Password = string(hasshedpassword)
-	_, err = usersCollection.InsertOne(context.TODO(), user)
-
-	if err != nil {
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":  "success",
-		"message": "User created successfully",
-		"data": map[string]interface{}{
-			"Username":  user.Username,
-			"email": user.Email,
-			"Password":  user.Password,
-			"CompanyName":   user.CompanyName,
-			"Gender":   user.Gender,
-
-		},
-	})
-	
 }
 
-// Handler function to handle incoming requests
 func Handler(w http.ResponseWriter, r *http.Request) {
-	router := mux.NewRouter()
+    router :=mux.NewRouter()
 
-	// Route to handle a simple GET request
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "hello world",
-		})
-	}).Methods("GET")
-	router.HandleFunc("/signup", sigup).Methods("POST")
-	// CORS handler setup
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders: []string{"Authorization", "Content-Type"},
-	}).Handler(router)
+     router.HandleFunc("/",func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("Welcome to User Registration API"))
+     }).Methods("GET")
 
-	// Serve HTTP with CORS enabled
-	corsHandler.ServeHTTP(w, r)
+    router.HandleFunc("/signup", sigup).Methods("POST")
+    corsHandler :=cors.New(
+        cors.Options{
+            AllowedOrigins: []string{"*"},
+            AllowedMethods:   []string{"GET", "POST"},
+            AllowedHeaders:    []string{"Content-Type"},
+            AllowCredentials: true,
+        },
+    ).Handler(router)
+    corsHandler.ServeHTTP(w,r)
 }
+
