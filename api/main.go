@@ -5,16 +5,23 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
-
+var jwtSecret = []byte("abdullah55")
 var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var client *mongo.Client
 var usersCollection *mongo.Collection
+
+type login struct{
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
 
 type User struct {
 	Username    string `json:"username"`
@@ -24,6 +31,11 @@ type User struct {
 	CompanyName string `json:"companyname"`
 }
 
+type claims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
+	
+}
 // init function to set up MongoDB connection
 func init() {
 	initMongo()
@@ -37,6 +49,50 @@ func initMongo() {
 	}
 	usersCollection = client.Database("test").Collection("users")
 }
+
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	var loginData login;
+	if err :=json.NewDecoder(r.Body).Decode(&loginData);err !=nil {
+		http.Error(w,"invalid request body",http.StatusBadRequest)
+		return
+	}
+
+      var existingUser User
+	  
+	  err :=usersCollection.FindOne(context.TODO(),map[string]string{"email":loginData.Email}).Decode(&existingUser)
+
+	  if err !=nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	  }
+	  err =bcrypt.CompareHashAndPassword([]byte(existingUser.Password),[]byte(loginData.Password))
+
+	  if err !=nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	  }
+
+	  claims := &claims{
+		Email: loginData.Email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(20 * time.Hour).Unix(),
+		},
+	}
+
+		  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+          tokenString, err := token.SignedString(jwtSecret)
+		
+
+		  if err!= nil {
+                http.Error(w, "Could not create token", http.StatusInternalServerError)
+                return
+          }
+
+		  w.WriteHeader(http.StatusOK)
+          json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+
+	}
 
 func sigup(w http.ResponseWriter, r *http.Request) {
 
@@ -67,6 +123,8 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 
 	
 	user.Password = string(hasshedpassword)
+
+
 	_, err = usersCollection.InsertOne(context.TODO(), user)
 
 	if err != nil {
@@ -90,6 +148,30 @@ func sigup(w http.ResponseWriter, r *http.Request) {
 	
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Handler function to handle incoming requests
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
@@ -102,6 +184,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		})
 	}).Methods("GET")
 	router.HandleFunc("/signup", sigup).Methods("POST")
+	router.HandleFunc("/Login", Login).Methods("POST")
+
+	
 	// CORS handler setup
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
