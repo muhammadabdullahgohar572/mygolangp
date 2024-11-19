@@ -1,21 +1,21 @@
-package handler
+package main
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"io"
-	"log"
-	"net/http"
-	"time"
+    "bytes"
+    "context"
+    "encoding/json"
+    "io"
+    "log"
+    "net/http"
+    "time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/crypto/bcrypt"
+    "github.com/golang-jwt/jwt/v4"
+    "github.com/gorilla/mux"
+    "github.com/rs/cors"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
+    "golang.org/x/crypto/bcrypt"
 )
 
 // JWT secret key
@@ -28,36 +28,35 @@ var usersCollection *mongo.Collection
 
 // Struct for login request
 type Login struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+    Email    string `json:"email"`
+    Password string `json:"password"`
 }
 
 // Struct for user data
 type User struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	Gender      string `json:"gender"`
-	CompanyName string `json:"companyname"`
+    Username    string `json:"username"`
+    Password    string `json:"password"`
+    Email       string `json:"email"`
+    Gender      string `json:"gender"`
+    CompanyName string `json:"companyname"`
 }
 
 // Struct for JWT claims
 type Claims struct {
-	Email string `json:"email"`
-	jwt.StandardClaims
+    Email string `json:"email"`
+    jwt.StandardClaims
 }
 
 // Initialize MongoDB connection
 func initMongo() {
-	var err error
-	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		log.Fatal("Error connecting to MongoDB:", err)
-	}
-	usersCollection = client.Database("test").Collection("users")
-	log.Println("MongoDB connection established")
+    var err error
+    client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
+    if err != nil {
+        log.Fatal("Error connecting to MongoDB:", err)
+    }
+    usersCollection = client.Database("test").Collection("users")
+    log.Println("MongoDB connection established")
 }
-
 // Login handler
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var loginData Login
@@ -156,26 +155,23 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 
 // Main function
 func Handler(w http.ResponseWriter, r *http.Request) {
-	// Initialize MongoDB connection
-	initMongo()
+    initMongo()
 
-	// Setup router and routes
-	router := mux.NewRouter()
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Hello, world!"})
-	}).Methods("GET")
-	router.HandleFunc("/signup", signupHandler).Methods("POST")
-	router.HandleFunc("/login", loginHandler).Methods("POST")
+    // Setup router and routes
+    router := mux.NewRouter()
+    router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Hello, world!"})
+    }).Methods("GET")
+    router.HandleFunc("/signup", signupHandler).Methods("POST")
+    router.HandleFunc("/login", loginHandler).Methods("POST")
 
-	// Setup CORS
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders: []string{"Authorization", "Content-Type"},
-	}).Handler(router)
+    // Setup CORS
+    corsHandler := cors.New(cors.Options{
+        AllowedOrigins: []string{"*"},
+        AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedHeaders: []string{"Authorization", "Content-Type"},
+    }).Handler(router)
 
-	// Serve the request
-	corsHandler.ServeHTTP(w, r)
+    corsHandler.ServeHTTP(w, r)
 }
-
