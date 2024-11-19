@@ -155,7 +155,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Main function
-func Handler() {
+func Handler(w http.ResponseWriter, r *http.Request) {
 	// Initialize MongoDB connection
 	initMongo()
 
@@ -175,7 +175,6 @@ func Handler() {
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}).Handler(router)
 
-	// Start server
-	log.Println("Server is running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", corsHandler))
+	// Serve the request
+	corsHandler.ServeHTTP(w, r)
 }
