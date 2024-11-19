@@ -178,3 +178,4 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Serve the request
 	corsHandler.ServeHTTP(w, r)
 }
+
