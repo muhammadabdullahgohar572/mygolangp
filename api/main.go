@@ -155,7 +155,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Main function
-func main() {
+func Handler() {
 	// Initialize MongoDB connection
 	initMongo()
 
