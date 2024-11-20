@@ -152,6 +152,31 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+
+func Jwtbreak(w http.ResponseWriter, r *http.Request) {
+	authHeader :=r.Header.Get("Authorization")
+
+	if authHeader ==""|| len(authHeader) <7 || authHeader[:7] !="Bearer" {
+		http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	tokenString := authHeader[7:]
+	token ,err :=jwt.ParseWithClaims(tokenString,&Claims{},func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err !=nil || !token.Valid{
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+     json.NewEncoder(w).Encode(r)
+}
+
+
+
 // Main function
 func Handler(w http.ResponseWriter, r *http.Request) {
     initMongo()
@@ -164,7 +189,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     }).Methods("GET")
     router.HandleFunc("/signup", signupHandler).Methods("POST")
     router.HandleFunc("/login", loginHandler).Methods("POST")
+    router.HandleFunc("/Jwtbreak", Jwtbreak).Methods("GET")
 
+	
     // Setup CORS
     corsHandler := cors.New(cors.Options{
         AllowedOrigins: []string{"*"},
