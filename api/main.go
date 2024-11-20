@@ -8,7 +8,6 @@ import (
     "log"
     "net/http"
     "time"
-
     "github.com/golang-jwt/jwt/v4"
     "github.com/gorilla/mux"
     "github.com/rs/cors"
@@ -161,7 +160,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     router := mux.NewRouter()
     router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusOK)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Hello, world!"})
+        json.NewEncoder(w).Encode(map[string]string{"message": "Hello,!"})
     }).Methods("GET")
     router.HandleFunc("/signup", signupHandler).Methods("POST")
     router.HandleFunc("/login", loginHandler).Methods("POST")
