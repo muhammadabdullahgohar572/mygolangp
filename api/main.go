@@ -1,13 +1,19 @@
 package handler
 
 import (
-	"context"
+  "context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/mux"
+	"github.com/gorilil already exists", http.StatusConflict)
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		returnla/mux"
 	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -63,14 +69,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	var existingUser User
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
-		http.Error(w, "Email already exists", http.StatusConflict)
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
+		http.Error(w, "Ema
 	}
 	user.Password = string(hashedPassword)
 
@@ -121,6 +120,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
+
 
 // Main function
 func Handler(w http.ResponseWriter, r *http.Request) {
