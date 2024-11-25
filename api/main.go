@@ -1,14 +1,16 @@
 package handler
 
 import (
-    "context"
-    "encoding/json"
-    "log"
-    "net/http"
-    "github.com/gorilla/mux"
-    "github.com/rs/cors"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -35,7 +37,46 @@ func initMongo() { // (line 22)
     log.Println("Connected to MongoDB") // (line 30)
 }
 
-// Handler serves as the entry point for Vercel (line 34)
+func signup(w http.ResponseWriter, r *http.Request) {
+	var user User
+
+	if err :=json.NewDecoder(r.Body).Decode(&user); err !=nil{
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+    
+	var existingUser User
+
+	err :=usersCollection.FindOne(context.TODO(),map[string]string{"email":user.Email}).Decode(&existingUser)
+      
+	if  err == nil {
+		http.Error(w,"email already exists",http.StatusBadRequest)
+		return
+	}
+
+
+
+	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(user.Password),bcrypt.DefaultCost)
+
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+	return
+	}
+
+	user.Password = string(hashedPassword)
+
+    _,err =usersCollection.InsertOne(context.TODO(),user)
+	if err!= nil {
+        http.Error(w, "Error creating user", http.StatusInternalServerError)
+        return
+    }
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode("User created")
+
+}
+
+
 func Handler(w http.ResponseWriter, r *http.Request) {
     initMongo() // Ensure this runs once, consider using `sync.Once` to avoid repeated calls
 
@@ -44,7 +85,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusOK)
         json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API!"}) // (line 41)
     }).Methods("GET")
-
+ router.HandleFunc("/signup", signup).Methods("POST") // (line 43)
     corsHandler := cors.New(cors.Options{ // (line 45)
         AllowedOrigins: []string{"*"},
         AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
