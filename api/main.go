@@ -1,21 +1,21 @@
-package main
+package handler
 
 import (
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
+	// "time"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"github.com/golang-jwt/jwt/v4"
+	// "github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var jwtSecret = []byte("abdullah55")
+// var jwtSecret = []byte("abdullah55")
 var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 type User struct {
@@ -26,15 +26,15 @@ type User struct {
 	CompanyName string `json:"company_name"`
 }
 
-type Login struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
+// type Login struct {
+// 	Email    string `json:"email"`
+// 	Password string `json:"password"`
+// }
 
-type Claims struct {
-	Email string `json:"email"`
-	jwt.RegisteredClaims
-}
+// type Claims struct {
+// 	Email string `json:"email"`
+// 	jwt.RegisteredClaims
+// }
 
 var client *mongo.Client
 var usersCollection *mongo.Collection
@@ -84,46 +84,46 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User created"})
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var loginData Login
-	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+// func loginHandler(w http.ResponseWriter, r *http.Request) {
+// 	var loginData Login
+// 	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
+// 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+// 		return
+// 	}
 
-	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.Email}).Decode(&existingUser)
-	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
+// 	var existingUser User
+// 	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.Email}).Decode(&existingUser)
+// 	if err != nil {
+// 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.Password))
-	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
+// 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.Password))
+// 	if err != nil {
+// 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	// Generate JWT
-	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &Claims{
-		Email: loginData.Email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		http.Error(w, "Could not create token", http.StatusInternalServerError)
-		return
-	}
+// 	// Generate JWT
+// 	expirationTime := time.Now().Add(24 * time.Hour)
+// 	claims := &Claims{
+// 		Email: loginData.Email,
+// 		RegisteredClaims: jwt.RegisteredClaims{
+// 			ExpiresAt: jwt.NewNumericDate(expirationTime),
+// 		},
+// 	}
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+// 	tokenString, err := token.SignedString(jwtSecret)
+// 	if err != nil {
+// 		http.Error(w, "Could not create token", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
-}
+// 	w.WriteHeader(http.StatusOK)
+// 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+// }
 
-func main() {
+func Handler() {
 	// Initialize MongoDB
 	initMongo()
 
@@ -134,7 +134,7 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API!"})
 	}).Methods("GET")
 	router.HandleFunc("/signup", signupHandler).Methods("POST")
-	router.HandleFunc("/login", loginHandler).Methods("POST")
+	// router.HandleFunc("/login", loginHandler).Methods("POST")
 
 	// Configure CORS
 	corsHandler := cors.New(cors.Options{
