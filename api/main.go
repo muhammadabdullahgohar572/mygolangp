@@ -5,12 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-
-	
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -45,11 +41,8 @@ func initMongo() {
 
 
 
-func Handler() {
-
+func Handler(w http.ResponseWriter, r *http.Request) {
 	initMongo()
-
-	
 	router := mux.NewRouter()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
