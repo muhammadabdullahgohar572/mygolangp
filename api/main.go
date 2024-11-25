@@ -83,7 +83,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     router := mux.NewRouter() // Initialize router (line 38)
     router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusOK)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API!"}) // (line 41)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API! and create sigup api "}) // (line 41)
     }).Methods("GET")
  router.HandleFunc("/signup", signup).Methods("POST") // (line 43)
     corsHandler := cors.New(cors.Options{ // (line 45)
