@@ -63,7 +63,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var existingUser User
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.email}).Decode(&existingUser)
 	if err != nil {
-		http.Error(w, "Invalid credentials1", http.StatusUnauthorized)
+		http.Error(w, "Invalid credentials11", http.StatusUnauthorized)
 		return
 	}
 
