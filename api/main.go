@@ -65,13 +65,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 	var existingUser User
 	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.email}).Decode(&existingUser)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		http.Error(w, "Invalid credentials1", http.StatusUnauthorized)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.password))
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		http.Error(w, "Invalid credentials2", http.StatusUnauthorized)
 		return
 	}
 
