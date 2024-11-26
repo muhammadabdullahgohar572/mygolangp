@@ -143,7 +143,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": " create sigup api "}) // (line 41)
 	}).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST") // (line 43)
+	router.HandleFunc("/signup", signup).Methods("POST")
+	router.HandleFunc("/login", login).Methods("POST")
+	
+	
+	 // (line 43)
 	corsHandler := cors.New(cors.Options{                // (line 45)
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
