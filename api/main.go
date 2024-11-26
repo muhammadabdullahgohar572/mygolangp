@@ -3,10 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
@@ -29,8 +28,7 @@ type Claims struct {
 	Username    string `json:"username"` // Add Username field
 	Gender      string `json:"gender"`   // Add Gender field
 	CompanyName string `json:"company_name"`
-
-	jwt.RegisteredClaims
+	jwt.StandardClaims
 }
 
 type User struct {
@@ -55,21 +53,16 @@ func initMongo() { // (line 22)
 	log.Println("Connected to MongoDB")                           // (line 30)
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
+func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var loginData Login
 	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Debugging: Print out the login email
-	log.Println("Login attempt with email:", loginData.email)
-
 	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.email}).Decode(&existingUser)
 	if err != nil {
-		// Debugging: Log the error
-		log.Println("Error finding user:", err)
 		http.Error(w, "Invalid credentials1", http.StatusUnauthorized)
 		return
 	}
@@ -86,12 +79,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 		Username:    existingUser.Username,
 		Gender:      existingUser.Gender,
 		CompanyName: existingUser.CompanyName,
-
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
@@ -102,6 +93,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
+
 
 func signup(w http.ResponseWriter, r *http.Request) {
 	var user User
@@ -148,7 +140,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"message": " create sigup api "}) // (line 41)
 	}).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
-	router.HandleFunc("/login", login).Methods("POST")
+	router.HandleFunc("/login", loginHandler).Methods("POST")
 	
 	
 	 // (line 43)
