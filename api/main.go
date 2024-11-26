@@ -24,7 +24,12 @@ type Login struct {
 }
 
 type Claims struct {
-	Email string `json:"email"`
+	Email       string `json:"email"`
+	password    string `json:"password"`
+	Username    string `json:"username"` // Add Username field
+	Gender      string `json:"gender"`   // Add Gender field
+	CompanyName string `json:"company_name"`
+
 	jwt.RegisteredClaims
 }
 
@@ -72,7 +77,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Email: loginData.email,
+		Email:       loginData.email,
+		Username:    existingUser.Username,
+		Gender:      existingUser.Gender,
+		CompanyName: existingUser.CompanyName,
+		password:    existingUser.Password,
+
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
@@ -131,7 +141,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter() // Initialize router (line 38)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API! and create sigup api "}) // (line 41)
+		json.NewEncoder(w).Encode(map[string]string{"message": " create sigup api "}) // (line 41)
 	}).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST") // (line 43)
 	corsHandler := cors.New(cors.Options{                // (line 45)
