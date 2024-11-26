@@ -62,9 +62,14 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Debugging: Print out the login email
+	log.Println("Login attempt with email:", loginData.email)
+
 	var existingUser User
 	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.email}).Decode(&existingUser)
 	if err != nil {
+		// Debugging: Log the error
+		log.Println("Error finding user:", err)
 		http.Error(w, "Invalid credentials1", http.StatusUnauthorized)
 		return
 	}
@@ -81,7 +86,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 		Username:    existingUser.Username,
 		Gender:      existingUser.Gender,
 		CompanyName: existingUser.CompanyName,
-		password:    existingUser.Password,
 
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
