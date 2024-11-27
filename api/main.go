@@ -53,6 +53,9 @@ func initMongo() { // (line 22)
 	log.Println("Connected to MongoDB")                           // (line 30)
 }
 
+
+
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var loginData Login
 	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
@@ -127,7 +130,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode("User created")
+	json.NewEncoder(w).Encode(&user)
 
 }
 
