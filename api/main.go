@@ -66,19 +66,19 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var existingUser User
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.email}).Decode(&existingUser)
 	if err != nil {
-		http.Error(w, "Invalid credentials11", http.StatusUnauthorized)
+		http.Error(w, "Invalid email", http.StatusUnauthorized)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.password))
 	if err != nil {
-		http.Error(w, "Invalid credentials2", http.StatusUnauthorized)
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Email:       loginData.email,
+		Email:       existingUser.Email,
 		Username:    existingUser.Username,
 		Gender:      existingUser.Gender,
 		CompanyName: existingUser.CompanyName,
@@ -96,6 +96,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
+
 
 
 func signup(w http.ResponseWriter, r *http.Request) {
