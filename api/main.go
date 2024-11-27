@@ -6,76 +6,95 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
-var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+const mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 var jwtSecret = []byte("abdullah")
 
-type Login struct {
-	email    string `json:"email"`
-	password string `json:"password"`
+var client *mongo.Client // MongoDB client
+var usersCollection *mongo.Collection
+var once sync.Once
+
+func initMongo() {
+	// Ensure the MongoDB connection is initialized only once
+	once.Do(func() {
+		mongoClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
+		if err != nil {
+			log.Fatal("Error connecting to MongoDB:", err)
+		}
+		client = mongoClient
+		usersCollection = client.Database("test").Collection("users")
+		log.Println("Connected to MongoDB")
+	})
 }
 
-type Claims struct {
-	Email       string `json:"email"`
-	password    string `json:"password"`
-	Username    string `json:"username"` // Add Username field
-	Gender      string `json:"gender"`   // Add Gender field
-	CompanyName string `json:"company_name"`
-	jwt.StandardClaims
-}
-
-type User struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	Gender      string `json:"gender"`
-	CompanyName string `json:"company_name"`
-}
-
-var client *mongo.Client              // MongoDB client (line 18)
-var usersCollection *mongo.Collection // Collection handle (line 19)
-
-// Initialize MongoDB connection
-func initMongo() { // (line 22)
-	var err error
-	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		log.Fatal("Error connecting to MongoDB:", err) // (line 26)
+// Signup Handler
+func signup(w http.ResponseWriter, r *http.Request) {
+	user := User{}
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
-	usersCollection = client.Database("test").Collection("users") // (line 29)
-	log.Println("Connected to MongoDB")                           // (line 30)
+
+	// Check if email already exists
+	var existingUser User
+	err := usersCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	if err == nil {
+		http.Error(w, "Email already exists", http.StatusBadRequest)
+		return
+	}
+
+	// Hash the user's password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// Insert the user into MongoDB
+	_, err = usersCollection.InsertOne(context.TODO(), user)
+	if err != nil {
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
 }
 
-
-
-
+// Login Handler
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var loginData Login
+	loginData := Login{}
 	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Find the user in the database
 	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), bson.M{"email": loginData.Email}).Decode(&existingUser)
 	if err != nil {
 		http.Error(w, "Invalid email", http.StatusUnauthorized)
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.password))
+	// Compare the provided password with the stored hash
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.Password))
 	if err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
+	// Create JWT token
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Email:       existingUser.Email,
@@ -86,6 +105,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
@@ -97,62 +117,27 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-
-
-func signup(w http.ResponseWriter, r *http.Request) {
-	var user User
-
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	var existingUser User
-
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": user.Email}).Decode(&existingUser)
-
-	if err == nil {
-		http.Error(w, "email already exists", http.StatusBadRequest)
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-
-	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
-	}
-
-	user.Password = string(hashedPassword)
-
-	_, err = usersCollection.InsertOne(context.TODO(), user)
-	if err != nil {
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(&user)
-
-}
-
+// Router and Middleware
 func Handler(w http.ResponseWriter, r *http.Request) {
-	initMongo() // Ensure this runs once, consider using `sync.Once` to avoid repeated calls
+	initMongo() // Ensure MongoDB is initialized
 
-	router := mux.NewRouter() // Initialize router (line 38)
+	router := mux.NewRouter()
+
+	// Define routes
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": " create sigup api "}) // (line 41)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API"})
 	}).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", loginHandler).Methods("POST")
-	
-	
-	 // (line 43)
-	corsHandler := cors.New(cors.Options{                // (line 45)
+
+	// Add CORS middleware
+	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}).Handler(router)
 
-	corsHandler.ServeHTTP(w, r) // Serve requests (line 52)
+	// Serve the request
+	corsHandler.ServeHTTP(w, r)
 }
