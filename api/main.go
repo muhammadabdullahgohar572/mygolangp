@@ -18,8 +18,8 @@ var mongoURI = "mongodb+srv://Abdullah1:Abdullah1@cluster0.agxpb.mongodb.net/?re
 var jwtSecret = []byte("abdullah")
 
 type Login struct {
-	email    string `json:"email"`
-	password string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Claims struct {
@@ -54,8 +54,6 @@ func initMongo() { // (line 22)
 }
 
 
-
-
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var loginData Login
 	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
@@ -64,15 +62,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var existingUser User
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": loginData.Email}).Decode(&existingUser)
 	if err != nil {
-		http.Error(w, "Invalid email", http.StatusUnauthorized)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.password))
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginData.Password))
 	if err != nil {
-		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
@@ -96,7 +94,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
-
 
 
 func signup(w http.ResponseWriter, r *http.Request) {
