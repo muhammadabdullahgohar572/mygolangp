@@ -132,6 +132,36 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
+
+
+
+func Decode(w http.ResponseWriter, r *http.Request) {
+	outhHeader:=r.Header.Get("Authorization")
+
+	if outhHeader ==""|| len(outhHeader)<7 ||outhHeader[:7] !="Bearer"{
+		http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
+    return
+	} 
+
+	tokenstring :=outhHeader[7:]
+
+	token,err :=jwt.ParseWithClaims(tokenstring,&Claims{},func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+     if err!= nil ||!token.Valid {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode("Welcome to the protected route")
+}
+
+
+
+
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	initMongo() // Ensure this runs once, consider using `sync.Once` to avoid repeated calls
 
@@ -142,6 +172,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", loginHandler).Methods("POST")
+	router.HandleFunc("/protected", Decode).Methods("GET") // (line 47)
+
+
 	
 	
 	 // (line 43)
