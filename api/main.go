@@ -1,14 +1,11 @@
 package handler
 
-
-
 import (
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -162,7 +159,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", loginHandler).Methods("POST")
-	router.HandleFunc("/protected", decodeHandler).Methods("GET")
+	router.HandleFunc("/protected/{token}", decodeHandler).Methods("GET")
+
 
 	// CORS settings
 	corsHandler := cors.New(cors.Options{
