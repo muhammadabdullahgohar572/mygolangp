@@ -132,25 +132,40 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 // Protected route handler
 func decodeHandler(w http.ResponseWriter, r *http.Request) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-		http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
-		return
-	}
+    vars := mux.Vars(r) // Extract URL parameters
+    tokenString, exists := vars["token"]
+    if !exists || tokenString == "" {
+        http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+        return
+    }
 
-	tokenString := authHeader[7:]
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
+    // Parse the token
+    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+        return jwtSecret, nil
+    })
+    if err != nil || !token.Valid {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
 
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
+    // If token is valid, respond with success
+    claims, ok := token.Claims.(*Claims)
+    if !ok {
+        http.Error(w, "Invalid token structure", http.StatusUnauthorized)
+        return
+    }
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the protected route"})
+    response := map[string]interface{}{
+        "message":     "Welcome to the protected route",
+        "email":       claims.Email,
+        "username":    claims.Username,
+        "gender":      claims.Gender,
+        "companyName": claims.CompanyName,
+    }
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(response)
 }
+
 
 // Main function
 func Handler(w http.ResponseWriter, r *http.Request) {
