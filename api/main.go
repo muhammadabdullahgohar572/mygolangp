@@ -148,26 +148,44 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Decode handler for JWT-protected route
+
 func Decode(w http.ResponseWriter, r *http.Request) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-		http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
-		return
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header is missing", http.StatusUnauthorized)
+			log.Println("Decode: Authorization header is missing")
+			return
+		}
+	
+		if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+			http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+			log.Println("Decode: Invalid Authorization header format:", authHeader)
+			return
+		}
+	
+		tokenString := authHeader[7:]
+		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+			return jwtSecret, nil
+		})
+	
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			log.Println("Decode: Token parse error:", err)
+			return
+		}
+	
+		if !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			log.Println("Decode: Token is invalid")
+			return
+		}
+	
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the protected route"})
+		log.Println("Decode: Token is valid, user authenticated")
 	}
+	
 
-	tokenString := authHeader[7:]
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the protected route"})
-}
 
 // Handler for setting up routes and middleware
 func Handler(w http.ResponseWriter, r *http.Request) {
